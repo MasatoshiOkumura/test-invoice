@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS banks;
+DROP TABLE IF EXISTS customers;
