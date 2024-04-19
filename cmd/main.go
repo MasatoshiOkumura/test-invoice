@@ -1,16 +1,22 @@
 package main
 
 import (
+	"github.com/gin-gonic/gin"
+
 	"test-invoice/handler"
 	"test-invoice/infrastructure"
-
-	"github.com/gin-gonic/gin"
 )
 
 func main() {
 	infrastructure.Init()
 
 	r := gin.Default()
+
+	users := r.Group("api/users")
+	{
+		userHandler := handler.UserHandler{}
+		users.POST("/", userHandler.Create)
+	}
 
 	invoices := r.Group("api/invoices")
 	{

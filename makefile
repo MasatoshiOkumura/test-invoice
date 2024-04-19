@@ -1,3 +1,7 @@
+# サーバ起動
+up:
+	go run cmd/main.go
+
 # MySQLサーバを起動
 db-up:
 	docker compose up mysql -d
