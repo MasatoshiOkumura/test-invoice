@@ -1,5 +1,5 @@
 CREATE TABLE invoices (
-    id INT PRIMARY KEY,
+    id INT PRIMARY KEY AUTO_INCREMENT,
     company_id INT NOT NULL,
     customer_id INT NOT NULL,
     issue_date DATE NOT NULL,

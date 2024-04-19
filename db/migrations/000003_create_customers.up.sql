@@ -1,5 +1,5 @@
 CREATE TABLE customers (
-    id INT PRIMARY KEY,
+    id INT PRIMARY KEY AUTO_INCREMENT,
     company_id INT NOT NULL,
     name VARCHAR(255) NOT NULL,
     repesentative VARCHAR(255),
@@ -12,7 +12,7 @@ CREATE TABLE customers (
 );
 
 CREATE TABLE banks (
-    id INT PRIMARY KEY,
+    id INT PRIMARY KEY AUTO_INCREMENT,
     customer_id INT NOT NULL,
     name VARCHAR(255) NOT NULL,
     account_number VARCHAR(20) NOT NULL,

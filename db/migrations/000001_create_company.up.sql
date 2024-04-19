@@ -1,5 +1,5 @@
 CREATE TABLE companies (
-    id INT PRIMARY KEY,
+    id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL,
     repesentative VARCHAR(255),
     tel VARCHAR(255),

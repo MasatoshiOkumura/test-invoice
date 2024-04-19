@@ -1,5 +1,5 @@
 CREATE TABLE users (
-    id INT PRIMARY KEY,
+    id INT PRIMARY KEY AUTO_INCREMENT,
     company_id INT NOT NULL,
     name VARCHAR(255) NOT NULL,
     mail VARCHAR(255) NOT NULL,
