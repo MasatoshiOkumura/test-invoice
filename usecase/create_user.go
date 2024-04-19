@@ -4,9 +4,9 @@ import (
 	"net/http"
 
 	"test-invoice/domain/model"
+	"test-invoice/domain/repository"
 	"test-invoice/domain/service"
 	errcode "test-invoice/lib"
-	"test-invoice/repository"
 )
 
 type createUserUsecaseImpl struct {

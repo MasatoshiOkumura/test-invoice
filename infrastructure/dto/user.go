@@ -12,6 +12,11 @@ type UserCreateInput struct {
 	Password  string `json:"password"`
 }
 
+type UserLoginInput struct {
+	Mail     string `json:"mail"`
+	Password string `json:"password"`
+}
+
 type User struct {
 	ID        int `json:"id" binding:"required"`
 	CompanyID int
