@@ -1,6 +1,8 @@
 package main
 
 import (
+	"log"
+
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 
@@ -12,7 +14,7 @@ import (
 func main() {
 	infrastructure.Init()
 	if err := godotenv.Load(".env"); err != nil {
-		panic(err)
+		log.Panicf("load .env error: %v", err)
 	}
 
 	r := gin.Default()
