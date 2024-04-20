@@ -13,8 +13,15 @@ import (
 
 type UserHandler struct{}
 
+type UserCreateInput struct {
+	CompanyID int    `json:"company_id"`
+	Name      string `json:"name"`
+	Mail      string `json:"mail"`
+	Password  string `json:"password"`
+}
+
 func (h UserHandler) Create(c *gin.Context) {
-	var input dto.UserCreateInput
+	var input UserCreateInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),
@@ -36,15 +43,20 @@ func (h UserHandler) Create(c *gin.Context) {
 			return
 		}
 		c.JSON(http.StatusInternalServerError, err)
+		return
 	}
-
 	user := dto.ConvertToUserDTO(u)
 
 	c.JSON(http.StatusOK, user)
 }
 
+type UserLoginInput struct {
+	Mail     string `json:"mail"`
+	Password string `json:"password"`
+}
+
 func (h UserHandler) Login(c *gin.Context) {
-	var input dto.UserLoginInput
+	var input UserLoginInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),
@@ -64,6 +76,7 @@ func (h UserHandler) Login(c *gin.Context) {
 			return
 		}
 		c.JSON(http.StatusInternalServerError, err)
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{

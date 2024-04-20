@@ -19,6 +19,7 @@ type InvoiceBillingAmount decimal.Decimal
 type InvoiceStatus int
 
 const (
+	InvoiceStatusUnknown    InvoiceStatus = 0
 	InvoiceStausUnprocessed InvoiceStatus = 1
 	InvoiceStatusInprogress InvoiceStatus = 2
 	InvoiceStatusDone       InvoiceStatus = 3
@@ -45,7 +46,7 @@ type Invoice struct {
 }
 
 func NewInvoicePayment(value string) (InvoicePayment, error) {
-	d, err := validateDecimalPrecision(value, 15, 2)
+	d, err := validateDecimalPrecision(value, 15, 0)
 	if err != nil {
 		return InvoicePayment(decimal.NewFromInt(0)), err
 	}
@@ -53,7 +54,7 @@ func NewInvoicePayment(value string) (InvoicePayment, error) {
 }
 
 func NewInvoiceFee(value string) (InvoiceFee, error) {
-	d, err := validateDecimalPrecision(value, 12, 2)
+	d, err := validateDecimalPrecision(value, 12, 0)
 	if err != nil {
 		return InvoiceFee(decimal.NewFromInt(0)), err
 	}
@@ -69,7 +70,7 @@ func NewInvoiceFeeRate(value string) (InvoiceFeeRate, error) {
 }
 
 func NewInvoiceTax(value string) (InvoiceTax, error) {
-	d, err := validateDecimalPrecision(value, 12, 2)
+	d, err := validateDecimalPrecision(value, 12, 0)
 	if err != nil {
 		return InvoiceTax(decimal.NewFromInt(0)), err
 	}
@@ -85,7 +86,7 @@ func NewInvoiceTaxRate(value string) (InvoiceTaxRate, error) {
 }
 
 func NewInvoiceBillingAmount(value string) (InvoiceBillingAmount, error) {
-	d, err := validateDecimalPrecision(value, 15, 2)
+	d, err := validateDecimalPrecision(value, 15, 0)
 	if err != nil {
 		return InvoiceBillingAmount(decimal.NewFromInt(0)), err
 	}
@@ -142,14 +143,17 @@ func NewInvoice(companyID int, customerID int, payment string, feeRate string, d
 	frDeci := decimal.Decimal(fr)
 	// 請求金額=請求金額+(請求金額*手数料率*消費税率)
 	ba := pDeci.Add(pDeci.Mul(frDeci).Mul(TaxRate))
+	ba = ba.Ceil()
 	// 手数料=請求金額*手数料率
 	fDeci := pDeci.Mul(frDeci)
+	fDeci = fDeci.Ceil()
 	// 消費税=(請求金額+手数料)*消費税率
 	tax := (pDeci.Add(fDeci)).Mul(TaxRate)
+	tax = tax.Ceil()
 
-	today, err := time.Parse("2006-01-02", time.Now().String())
+	today, err := time.Parse("2006-01-02", time.Now().Format("2006-01-02"))
 	if err != nil {
-		return nil, err
+		return nil, errcode.NewHTTPError(http.StatusInternalServerError, "time now parse failed")
 	}
 
 	invoice := &Invoice{
@@ -167,4 +171,17 @@ func NewInvoice(companyID int, customerID int, payment string, feeRate string, d
 	}
 
 	return invoice, nil
+}
+
+func NewInvoiceStatus(n int) InvoiceStatus {
+	switch n {
+	case int(InvoiceStausUnprocessed):
+		return InvoiceStausUnprocessed
+	case int(InvoiceStatusInprogress):
+		return InvoiceStatusInprogress
+	case int(InvoiceStatusDone):
+		return InvoiceStatusDone
+	default:
+		return InvoiceStatusUnknown
+	}
 }

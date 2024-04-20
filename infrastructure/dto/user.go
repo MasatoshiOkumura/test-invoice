@@ -5,20 +5,8 @@ import (
 	"time"
 )
 
-type UserCreateInput struct {
-	CompanyID int    `json:"company_id"`
-	Name      string `json:"name"`
-	Mail      string `json:"mail"`
-	Password  string `json:"password"`
-}
-
-type UserLoginInput struct {
-	Mail     string `json:"mail"`
-	Password string `json:"password"`
-}
-
 type User struct {
-	ID        int `json:"id" binding:"required"`
+	ID        int `json:"id"`
 	CompanyID int
 	Name      string
 	Mail      string
