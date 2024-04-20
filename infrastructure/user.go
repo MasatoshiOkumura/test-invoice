@@ -14,24 +14,24 @@ import (
 	errcode "test-invoice/lib"
 )
 
-type user struct{}
+type userRepo struct{}
 
 func NewUser() repository.User {
-	return &user{}
+	return &userRepo{}
 }
 
-func (user *user) Create(companyID int, name string, mail string, password string) (*model.User, error) {
+func (u *userRepo) Create(user *model.User) (*model.User, error) {
 	db := GetDB()
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
 	}
 
 	userDAO := dto.User{
-		CompanyID: companyID,
-		Name:      name,
-		Mail:      mail,
+		CompanyID: user.CompanyID,
+		Name:      user.Name,
+		Mail:      user.Mail,
 		Password:  string(hash),
 	}
 
@@ -42,7 +42,7 @@ func (user *user) Create(companyID int, name string, mail string, password strin
 	return userDAO.ConvertToModel(), nil
 }
 
-func (u *user) Login(mail string, password string, inPassword string) (string, error) {
+func (userRepo *userRepo) Login(mail string, password string, inPassword string) (string, error) {
 	key := os.Getenv("ACCESS_SECRET_KEY")
 
 	if err := bcrypt.CompareHashAndPassword([]byte(password), []byte(inPassword)); err != nil {
@@ -61,7 +61,7 @@ func (u *user) Login(mail string, password string, inPassword string) (string, e
 	return accessToken, nil
 }
 
-func (u *user) FindByMail(mail string) (*model.User, error) {
+func (u *userRepo) FindByMail(mail string) (*model.User, error) {
 	db := GetDB()
 	userDAO := dto.User{}
 

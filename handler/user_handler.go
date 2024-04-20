@@ -22,8 +22,14 @@ func (h UserHandler) Create(c *gin.Context) {
 		return
 	}
 
+	in := &usecase.CreateUserInput{
+		CompanyID: input.CompanyID,
+		Name:      input.Name,
+		Mail:      input.Mail,
+		Password:  input.Password,
+	}
 	repo := infrastructure.NewUser()
-	u, err := usecase.NewCreateUserUsecase(input.CompanyID, input.Name, input.Mail, input.Password, repo).Execute()
+	u, err := usecase.NewUserUsecase(repo).CreateUser(in)
 	if err != nil {
 		if e, ok := err.(*errcode.HTTPError); ok {
 			c.JSON(e.Code, gin.H{"error": e.Message})
@@ -46,8 +52,12 @@ func (h UserHandler) Login(c *gin.Context) {
 		return
 	}
 
+	in := &usecase.LoginInput{
+		Mail:     input.Mail,
+		Password: input.Password,
+	}
 	repo := infrastructure.NewUser()
-	token, err := usecase.NewLoginUsecase(input.Mail, input.Password, repo).Execute()
+	token, err := usecase.NewUserUsecase(repo).Login(in)
 	if err != nil {
 		if e, ok := err.(*errcode.HTTPError); ok {
 			c.JSON(e.Code, gin.H{"error": e.Message})
