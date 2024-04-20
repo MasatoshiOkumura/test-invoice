@@ -1,13 +1,14 @@
 package dto
 
 import (
-	"test-invoice/domain/model"
 	"time"
+
+	"test-invoice/domain/model"
 )
 
 type Customer struct {
 	ID            int       `json:"id"`
-	CompanyID     int       `josn:"company_id"`
+	CompanyID     int       `json:"company_id"`
 	Name          string    `json:"name"`
 	Repesentative string    `json:"repesentative"`
 	Tel           string    `json:"tel"`
