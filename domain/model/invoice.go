@@ -2,9 +2,12 @@ package model
 
 import (
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/shopspring/decimal"
+
+	errcode "test-invoice/lib"
 )
 
 type InvoicePayment decimal.Decimal
@@ -16,11 +19,14 @@ type InvoiceBillingAmount decimal.Decimal
 type InvoiceStatus int
 
 const (
+	InvoiceStatusUnknown    InvoiceStatus = 0
 	InvoiceStausUnprocessed InvoiceStatus = 1
 	InvoiceStatusInprogress InvoiceStatus = 2
 	InvoiceStatusDone       InvoiceStatus = 3
 	IncoiceStatusError      InvoiceStatus = 4
 )
+
+var TaxRate = decimal.NewFromFloat(0.1)
 
 type Invoice struct {
 	ID            int                  `json:"id"`
@@ -40,7 +46,7 @@ type Invoice struct {
 }
 
 func NewInvoicePayment(value string) (InvoicePayment, error) {
-	d, err := validateDecimalPrecision(value, 15, 2)
+	d, err := validateDecimalPrecision(value, 15, 0)
 	if err != nil {
 		return InvoicePayment(decimal.NewFromInt(0)), err
 	}
@@ -48,7 +54,7 @@ func NewInvoicePayment(value string) (InvoicePayment, error) {
 }
 
 func NewInvoiceFee(value string) (InvoiceFee, error) {
-	d, err := validateDecimalPrecision(value, 12, 2)
+	d, err := validateDecimalPrecision(value, 12, 0)
 	if err != nil {
 		return InvoiceFee(decimal.NewFromInt(0)), err
 	}
@@ -64,7 +70,7 @@ func NewInvoiceFeeRate(value string) (InvoiceFeeRate, error) {
 }
 
 func NewInvoiceTax(value string) (InvoiceTax, error) {
-	d, err := validateDecimalPrecision(value, 12, 2)
+	d, err := validateDecimalPrecision(value, 12, 0)
 	if err != nil {
 		return InvoiceTax(decimal.NewFromInt(0)), err
 	}
@@ -80,7 +86,7 @@ func NewInvoiceTaxRate(value string) (InvoiceTaxRate, error) {
 }
 
 func NewInvoiceBillingAmount(value string) (InvoiceBillingAmount, error) {
-	d, err := validateDecimalPrecision(value, 15, 2)
+	d, err := validateDecimalPrecision(value, 15, 0)
 	if err != nil {
 		return InvoiceBillingAmount(decimal.NewFromInt(0)), err
 	}
@@ -106,4 +112,76 @@ func validateDecimalPrecision(value string, precision, scale int32) (decimal.Dec
 	}
 
 	return d, nil
+}
+
+func newDeadline(deadline string) (*time.Time, error) {
+	in, err := time.Parse("2006-01-02", deadline)
+	if err != nil {
+		return nil, errcode.NewHTTPError(http.StatusBadRequest, "invalid deadline")
+	}
+	if time.Now().After(in) {
+		return nil, errcode.NewHTTPError(http.StatusBadRequest, "deadline must be after now")
+	}
+	return &in, nil
+}
+
+func NewInvoice(companyID int, customerID int, payment string, feeRate string, deadline string) (*Invoice, error) {
+	p, err := NewInvoicePayment(payment)
+	if err != nil {
+		return nil, errcode.NewHTTPError(http.StatusBadRequest, "payment format is not correct")
+	}
+	fr, err := NewInvoiceFeeRate(feeRate)
+	if err != nil {
+		return nil, errcode.NewHTTPError(http.StatusBadRequest, "fee_rate format is not correct")
+	}
+	dl, err := newDeadline(deadline)
+	if err != nil {
+		return nil, err
+	}
+
+	pDeci := decimal.Decimal(p)
+	frDeci := decimal.Decimal(fr)
+	// 請求金額=請求金額+(請求金額*手数料率*消費税率)
+	ba := pDeci.Add(pDeci.Mul(frDeci).Mul(TaxRate))
+	ba = ba.Ceil()
+	// 手数料=請求金額*手数料率
+	fDeci := pDeci.Mul(frDeci)
+	fDeci = fDeci.Ceil()
+	// 消費税=(請求金額+手数料)*消費税率
+	tax := (pDeci.Add(fDeci)).Mul(TaxRate)
+	tax = tax.Ceil()
+
+	today, err := time.Parse("2006-01-02", time.Now().Format("2006-01-02"))
+	if err != nil {
+		return nil, errcode.NewHTTPError(http.StatusInternalServerError, "time now parse failed")
+	}
+
+	invoice := &Invoice{
+		CompanyID:     companyID,
+		CustomerID:    customerID,
+		IssueDate:     today,
+		Payment:       p,
+		Fee:           InvoiceFee(fDeci),
+		FeeRate:       fr,
+		Tax:           InvoiceTax(tax),
+		TaxRate:       InvoiceTaxRate(TaxRate),
+		BillingAmount: InvoiceBillingAmount(ba),
+		Deadline:      *dl,
+		Status:        InvoiceStausUnprocessed,
+	}
+
+	return invoice, nil
+}
+
+func NewInvoiceStatus(n int) InvoiceStatus {
+	switch n {
+	case int(InvoiceStausUnprocessed):
+		return InvoiceStausUnprocessed
+	case int(InvoiceStatusInprogress):
+		return InvoiceStatusInprogress
+	case int(InvoiceStatusDone):
+		return InvoiceStatusDone
+	default:
+		return InvoiceStatusUnknown
+	}
 }
