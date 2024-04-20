@@ -11,3 +11,14 @@ type User struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
+
+func NewUser(companyID int, name string, mail string, password string) (*User, error) {
+	user := &User{
+		CompanyID: companyID,
+		Name:      name,
+		Mail:      mail,
+		Password:  password,
+	}
+
+	return user, nil
+}
