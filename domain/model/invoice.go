@@ -2,9 +2,12 @@ package model
 
 import (
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/shopspring/decimal"
+
+	errcode "test-invoice/lib"
 )
 
 type InvoicePayment decimal.Decimal
@@ -21,6 +24,8 @@ const (
 	InvoiceStatusDone       InvoiceStatus = 3
 	IncoiceStatusError      InvoiceStatus = 4
 )
+
+var TaxRate = decimal.NewFromFloat(0.1)
 
 type Invoice struct {
 	ID            int                  `json:"id"`
@@ -106,4 +111,60 @@ func validateDecimalPrecision(value string, precision, scale int32) (decimal.Dec
 	}
 
 	return d, nil
+}
+
+func newDeadline(deadline string) (*time.Time, error) {
+	in, err := time.Parse("2006-01-02", deadline)
+	if err != nil {
+		return nil, errcode.NewHTTPError(http.StatusBadRequest, "invalid deadline")
+	}
+	if time.Now().After(in) {
+		return nil, errcode.NewHTTPError(http.StatusBadRequest, "deadline must be after now")
+	}
+	return &in, nil
+}
+
+func NewInvoice(companyID int, customerID int, payment string, feeRate string, deadline string) (*Invoice, error) {
+	p, err := NewInvoicePayment(payment)
+	if err != nil {
+		return nil, errcode.NewHTTPError(http.StatusBadRequest, "payment format is not correct")
+	}
+	fr, err := NewInvoiceFeeRate(feeRate)
+	if err != nil {
+		return nil, errcode.NewHTTPError(http.StatusBadRequest, "fee_rate format is not correct")
+	}
+	dl, err := newDeadline(deadline)
+	if err != nil {
+		return nil, err
+	}
+
+	pDeci := decimal.Decimal(p)
+	frDeci := decimal.Decimal(fr)
+	// 請求金額=請求金額+(請求金額*手数料率*消費税率)
+	ba := pDeci.Add(pDeci.Mul(frDeci).Mul(TaxRate))
+	// 手数料=請求金額*手数料率
+	fDeci := pDeci.Mul(frDeci)
+	// 消費税=(請求金額+手数料)*消費税率
+	tax := (pDeci.Add(fDeci)).Mul(TaxRate)
+
+	today, err := time.Parse("2006-01-02", time.Now().String())
+	if err != nil {
+		return nil, err
+	}
+
+	invoice := &Invoice{
+		CompanyID:     companyID,
+		CustomerID:    customerID,
+		IssueDate:     today,
+		Payment:       p,
+		Fee:           InvoiceFee(fDeci),
+		FeeRate:       fr,
+		Tax:           InvoiceTax(tax),
+		TaxRate:       InvoiceTaxRate(TaxRate),
+		BillingAmount: InvoiceBillingAmount(ba),
+		Deadline:      *dl,
+		Status:        InvoiceStausUnprocessed,
+	}
+
+	return invoice, nil
 }
