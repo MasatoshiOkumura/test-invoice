@@ -5,7 +5,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"test-invoice/infrastructure/dto"
 	errcode "test-invoice/lib"
 	"test-invoice/usecase"
 )
@@ -47,7 +46,7 @@ func (h userHandler) Create(c *gin.Context) {
 		Mail:      input.Mail,
 		Password:  input.Password,
 	}
-	u, err := h.userUsecase.CreateUser(in)
+	_, err := h.userUsecase.CreateUser(in)
 	if err != nil {
 		if e, ok := err.(*errcode.HTTPError); ok {
 			c.JSON(e.Code, gin.H{"error": e.Message})
@@ -56,9 +55,8 @@ func (h userHandler) Create(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
-	user := dto.ConvertToUserDTO(u)
 
-	c.JSON(http.StatusOK, user)
+	c.JSON(http.StatusOK, gin.H{"message": "success"})
 }
 
 type UserLoginInput struct {
