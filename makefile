@@ -13,3 +13,7 @@ db-cli:
 # マイグレーション
 db-migrate:
 	migrate -path db/migrations -database "mysql://root:root@tcp(127.0.0.1:3306)/test-invoice" up
+
+# テスト実行
+test:
+	go test ./...
