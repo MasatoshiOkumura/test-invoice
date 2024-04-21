@@ -5,13 +5,25 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"test-invoice/infrastructure"
 	"test-invoice/infrastructure/dto"
 	errcode "test-invoice/lib"
 	"test-invoice/usecase"
 )
 
-type UserHandler struct{}
+type UserHandler interface {
+	Login(c *gin.Context)
+	Create(c *gin.Context)
+}
+
+type userHandler struct {
+	userUsecase usecase.UserUsecase
+}
+
+func NewUserUsecase(userUsecase usecase.UserUsecase) UserHandler {
+	return &userHandler{
+		userUsecase: userUsecase,
+	}
+}
 
 type UserCreateInput struct {
 	CompanyID int    `json:"company_id"`
@@ -20,7 +32,7 @@ type UserCreateInput struct {
 	Password  string `json:"password"`
 }
 
-func (h UserHandler) Create(c *gin.Context) {
+func (h userHandler) Create(c *gin.Context) {
 	var input UserCreateInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -35,8 +47,7 @@ func (h UserHandler) Create(c *gin.Context) {
 		Mail:      input.Mail,
 		Password:  input.Password,
 	}
-	repo := infrastructure.NewUser()
-	u, err := usecase.NewUserUsecase(repo).CreateUser(in)
+	u, err := h.userUsecase.CreateUser(in)
 	if err != nil {
 		if e, ok := err.(*errcode.HTTPError); ok {
 			c.JSON(e.Code, gin.H{"error": e.Message})
@@ -55,7 +66,7 @@ type UserLoginInput struct {
 	Password string `json:"password"`
 }
 
-func (h UserHandler) Login(c *gin.Context) {
+func (h userHandler) Login(c *gin.Context) {
 	var input UserLoginInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -68,8 +79,7 @@ func (h UserHandler) Login(c *gin.Context) {
 		Mail:     input.Mail,
 		Password: input.Password,
 	}
-	repo := infrastructure.NewUser()
-	token, err := usecase.NewUserUsecase(repo).Login(in)
+	token, err := h.userUsecase.Login(in)
 	if err != nil {
 		if e, ok := err.(*errcode.HTTPError); ok {
 			c.JSON(e.Code, gin.H{"error": e.Message})

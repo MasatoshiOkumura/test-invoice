@@ -7,6 +7,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 
 	"test-invoice/domain/model"
 	"test-invoice/domain/repository"
@@ -14,15 +15,15 @@ import (
 	errcode "test-invoice/lib"
 )
 
-type userRepo struct{}
+type userRepo struct {
+	db *gorm.DB
+}
 
-func NewUser() repository.User {
-	return &userRepo{}
+func NewUser(db *gorm.DB) repository.User {
+	return &userRepo{db: db}
 }
 
 func (u *userRepo) Create(user *model.User) (*model.User, error) {
-	db := GetDB()
-
 	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
@@ -35,7 +36,7 @@ func (u *userRepo) Create(user *model.User) (*model.User, error) {
 		Password:  string(hash),
 	}
 
-	if err := db.Create(&userDAO).Error; err != nil {
+	if err := u.db.Create(&userDAO).Error; err != nil {
 		return nil, err
 	}
 
