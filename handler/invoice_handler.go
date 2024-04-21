@@ -6,21 +6,37 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"test-invoice/infrastructure"
 	"test-invoice/infrastructure/dto"
 	errcode "test-invoice/lib"
 	"test-invoice/usecase"
 	"test-invoice/usecase/queryservice"
 )
 
-type InvoiceHandler struct{}
+type InvoiceHandler interface {
+	List(c *gin.Context)
+	Create(c *gin.Context)
+}
+
+type invoiceHandler struct {
+	invoiceUsecase      usecase.InvoiceUsecase
+	invoiceQueryservice queryservice.InvoiceQuery
+}
+
+func NewInvoiceHandler(
+	invoiceUsecase usecase.InvoiceUsecase,
+	invoiceQueryservice queryservice.InvoiceQuery,
+) InvoiceHandler {
+	return &invoiceHandler{
+		invoiceUsecase:      invoiceUsecase,
+		invoiceQueryservice: invoiceQueryservice,
+	}
+}
 
 type InvoiceListInput struct {
 	Date string
 }
 
-func (i InvoiceHandler) List(c *gin.Context) {
-	db := infrastructure.GetDB()
+func (h invoiceHandler) List(c *gin.Context) {
 	dateStr := c.Query("date")
 	date, err := time.Parse("2006-01-02", dateStr)
 	if err != nil {
@@ -51,7 +67,7 @@ func (i InvoiceHandler) List(c *gin.Context) {
 	in := &queryservice.ListInvoicesInput{
 		Date: date,
 	}
-	invoices, err := queryservice.NewInvoiceQuery(db).List(mail, in)
+	invoices, err := h.invoiceQueryservice.List(mail, in)
 	if err != nil {
 		if e, ok := err.(*errcode.HTTPError); ok {
 			c.JSON(e.Code, gin.H{"error": e.Message})
@@ -72,7 +88,7 @@ type InvoiceCreateInput struct {
 	Deadline   string `json:"deadline"`
 }
 
-func (h InvoiceHandler) Create(c *gin.Context) {
+func (h invoiceHandler) Create(c *gin.Context) {
 	var input InvoiceCreateInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -99,11 +115,7 @@ func (h InvoiceHandler) Create(c *gin.Context) {
 		return
 	}
 
-	i, err := usecase.NewInvoiceUsecase(
-		infrastructure.NewInvoice(),
-		infrastructure.NewUser(),
-		infrastructure.NewCustomer(),
-	).Create(mail, in)
+	i, err := h.invoiceUsecase.Create(mail, in)
 	if err != nil {
 		if e, ok := err.(*errcode.HTTPError); ok {
 			c.JSON(e.Code, gin.H{"error": e.Message})

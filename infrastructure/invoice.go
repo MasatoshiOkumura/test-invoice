@@ -6,17 +6,18 @@ import (
 	"test-invoice/infrastructure/dto"
 
 	"github.com/shopspring/decimal"
+	"gorm.io/gorm"
 )
 
-type invoiceRepo struct{}
+type invoiceRepo struct {
+	db *gorm.DB
+}
 
-func NewInvoice() repository.Invoice {
-	return &invoiceRepo{}
+func NewInvoice(db *gorm.DB) repository.Invoice {
+	return &invoiceRepo{db: db}
 }
 
 func (i *invoiceRepo) Create(invoice *model.Invoice) (*model.Invoice, error) {
-	db := GetDB()
-
 	invoiceDAO := dto.Invoice{
 		CompanyID:     invoice.CompanyID,
 		CustomerID:    invoice.CustomerID,
@@ -31,7 +32,7 @@ func (i *invoiceRepo) Create(invoice *model.Invoice) (*model.Invoice, error) {
 		Status:        int(invoice.Status),
 	}
 
-	if err := db.Create(&invoiceDAO).Error; err != nil {
+	if err := i.db.Create(&invoiceDAO).Error; err != nil {
 		return nil, err
 	}
 
