@@ -46,7 +46,7 @@ make up
 ```
 
 ## 動作確認
-企業ID, ユーザ名、メールアドレス、パスワードを指定しユーザを作成後、ログインを行なってください
+企業ID、ユーザ名、メールアドレス、パスワードを指定しユーザを作成後、ログインを行なってください
 - ユーザ登録
 ```
 curl -X POST 'http://localhost:8080/api/users/' \
@@ -73,7 +73,7 @@ curl -X POST 'http://localhost:8080/api/users/login' \
 - 請求書一覧 
 ```
 curl GET 'http://localhost:8080/api/invoices?date=2024-04-30' \
---header 'Authorization: Bearer {JWT}'
+--header 'Authorization: Bearer {jwt}'
 ```
 - 請求書作成
 ```
