@@ -1,6 +1,7 @@
 package model
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -62,9 +63,12 @@ func NewInvoiceFee(value string) (InvoiceFee, error) {
 }
 
 func NewInvoiceFeeRate(value string) (InvoiceFeeRate, error) {
-	d, err := validateDecimalPrecision(value, 5, 2)
+	d, err := validateDecimalPrecision(value, 3, 2)
 	if err != nil {
 		return InvoiceFeeRate(decimal.NewFromInt(0)), err
+	}
+	if d.GreaterThan(decimal.NewFromInt(1)) {
+		return InvoiceFeeRate(decimal.NewFromInt(0)), errors.New("fee_rate must be less than 1")
 	}
 	return InvoiceFeeRate(d), nil
 }
@@ -117,7 +121,7 @@ func validateDecimalPrecision(value string, precision, scale int32) (decimal.Dec
 func newDeadline(deadline string) (*time.Time, error) {
 	in, err := time.Parse("2006-01-02", deadline)
 	if err != nil {
-		return nil, errcode.NewHTTPError(http.StatusBadRequest, "invalid deadline")
+		return nil, errcode.NewHTTPError(http.StatusBadRequest, "invalid deadline format")
 	}
 	if time.Now().After(in) {
 		return nil, errcode.NewHTTPError(http.StatusBadRequest, "deadline must be after now")
@@ -142,7 +146,7 @@ func NewInvoice(companyID int, customerID int, payment string, feeRate string, d
 	pDeci := decimal.Decimal(p)
 	frDeci := decimal.Decimal(fr)
 	// 請求金額=請求金額+(請求金額*手数料率*消費税率)
-	ba := pDeci.Add(pDeci.Mul(frDeci).Mul(TaxRate))
+	ba := pDeci.Add(pDeci.Mul(frDeci).Mul(TaxRate.Add(decimal.NewFromInt(1))))
 	ba = ba.Ceil()
 	// 手数料=請求金額*手数料率
 	fDeci := pDeci.Mul(frDeci)
